@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-card" style="margin-bottom: 2rem;">
+    <h1>Admin Panel - Topic Requests Review</h1>
+    <p>Review suggested topics from the community. Approving automatically spawns a quiz category in the database. Rejecting allows you to state a reason.</p>
+</div>
+
+<div class="glass-card">
+    <h2 style="border-bottom: 1px solid var(--glass-border); padding-bottom: 0.8rem; margin-bottom: 1.5rem;">
+        Pending Topic Requests
+    </h2>
+    
+    {% if pending_requests %}
+        <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
+            {% for req in pending_requests %}
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 18px; padding: 2rem; transition: border-color 0.3s;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 1rem;">
+                        <div>
+                            <h3 style="margin-bottom: 0.2rem; color: var(--accent); font-size: 1.4rem;">{{ req.title }}</h3>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                Suggested by <strong style="color: var(--text-main);">@{{ req.username }}</strong> &bull; {{ req.created_at }}
+                            </div>
+                        </div>
+                        
+                        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--glass-border); padding: 0.4rem 1rem; border-radius: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 0.9rem; color: var(--text-muted);">Votes:</span>
+                            <span style="font-size: 1.2rem; font-weight: 800; color: var(--primary);">{{ req.votes }}</span>
+                        </div>
+                    </div>
+                    
+                    <p style="color: var(--text-main); font-size: 1.05rem; line-height: 1.5; margin-bottom: 1.5rem;">
+                        {{ req.description }}
+                    </p>
+                    
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <form action="{{ url_for('admin_approve_request', request_id=req.id) }}" method="POST" style="margin: 0;">
+                            <button type="submit" class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, var(--success) 0%, #059669 100%); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); border: none;">
+                                ✓ Approve & Create Category
+                            </button>
+                        </form>
+                        
+                        <button class="btn btn-secondary btn-sm" onclick="toggleRejectionForm('{{ req.id }}')" style="background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.15); color: #f87171;">
+                            ✗ Reject Suggestion
+                        </button>
+                    </div>
+                    
+                    <!-- Inline Rejection Form, toggled via JS -->
+                    <div id="reject-form-{{ req.id }}" style="display: none; margin-top: 1.5rem; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 1.25rem; animation: slideIn 0.3s ease-out;">
+                        <form action="{{ url_for('admin_reject_request', request_id=req.id) }}" method="POST" style="margin: 0;">
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label class="form-label" for="note-{{ req.id }}" style="color: #f87171; font-weight: 600;">Rejection Reason Note</label>
+                                <input type="text" id="note-{{ req.id }}" name="admin_note" class="form-control" placeholder="e.g., Already covered in Web Development, or Too specific." required>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="submit" class="btn btn-danger btn-sm" style="padding: 0.4rem 1.25rem; border: none;">Confirm Rejection</button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="toggleRejectionForm('{{ req.id }}')">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: var(--text-muted); margin-top: 1rem;">No pending topic suggestions found in the system.</p>
+    {% endif %}
+</div>
+
+<script>
+function toggleRejectionForm(id) {
+    const form = document.getElementById('reject-form-' + id);
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        form.querySelector('input').focus();
+    } else {
+        form.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

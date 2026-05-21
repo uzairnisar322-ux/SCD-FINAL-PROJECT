@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizCraft | Interactive SE Learning System</title>
+    
+    <!-- Modern Styling and Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Background glowing visual effect containers -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <header>
+        <nav class="navbar">
+            <a href="/" class="nav-brand">
+                Quiz<span>Craft</span>
+            </a>
+            
+            <ul class="nav-links">
+                {% if session.get('user_id') %}
+                    <li><a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a></li>
+                    <li><a href="{{ url_for('leaderboard') }}" class="nav-link">Leaderboard</a></li>
+                    <li><a href="{{ url_for('my_requests') }}" class="nav-link">Topic Requests</a></li>
+                    {% if session.get('role') == 'admin' %}
+                        <li><a href="{{ url_for('admin_requests') }}" class="nav-link" style="color: var(--secondary);">Review Requests</a></li>
+                        <li><a href="{{ url_for('admin_panel') }}" class="nav-link" style="color: var(--warning);">Admin Panel</a></li>
+                    {% endif %}
+                    <li class="nav-user">
+                        <span class="user-tag">{{ session.get('username') }} ({{ session.get('role') }})</span>
+                        <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm">Logout</a>
+                    </li>
+                {% else %}
+                    <li><a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">Get Started</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <div class="glass-container">
+        <!-- System notifications and alerts -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="flash {{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Main Dynamic content block -->
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid rgba(255, 255, 255, 0.05); margin-top: 5rem;">
+        <p>&copy; 2026 QuizCraft. Crafted for Software Engineering Process Standards.</p>
+    </footer>
+</body>
+</html>

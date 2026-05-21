@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-wrapper" style="max-width: 600px; margin: 2rem auto;">
+    <div class="glass-card">
+        <h1 style="color: var(--accent); text-align: center; margin-bottom: 0.5rem;">Suggest a New Topic</h1>
+        <p style="text-align: center; margin-bottom: 2rem; color: var(--text-muted);">
+            Want to test your knowledge on a new subject? Request a custom topic here. Once approved by our administrators, it will automatically launch as a new quiz category!
+        </p>
+        
+        <form action="{{ url_for('request_topic') }}" method="POST">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label class="form-label" for="title" style="font-weight: 600; color: var(--text-main);">Topic Title</label>
+                <input type="text" id="title" name="title" class="form-control" placeholder="e.g., Python Design Patterns, Agile Methodology" required>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label class="form-label" for="description" style="font-weight: 600; color: var(--text-main);">Topic Description & Goals</label>
+                <textarea id="description" name="description" class="form-control" rows="5" placeholder="Briefly describe what this category should cover, target learning outcomes, or typical questions..." required></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 12px;">
+                <button type="submit" class="btn btn-primary" style="flex: 2;">Submit Request</button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="flex: 1; text-align: center; display: inline-flex; align-items: center; justify-content: center;">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

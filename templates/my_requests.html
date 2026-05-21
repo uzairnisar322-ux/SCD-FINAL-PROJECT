@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-card" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="margin-bottom: 0.5rem;">Topic Requests & Suggestions</h1>
+        <p style="margin-bottom: 0; color: var(--text-muted);">Suggest new quiz categories, track your requests, or vote on community requests!</p>
+    </div>
+    <a href="{{ url_for('request_topic') }}" class="btn btn-primary">
+        ➕ Suggest a Topic
+    </a>
+</div>
+
+<div class="glass-card" style="margin-bottom: 2rem;">
+    <h2 style="border-bottom: 1px solid var(--glass-border); padding-bottom: 0.8rem; margin-bottom: 1.5rem; color: var(--accent);">
+        My Topic Submissions
+    </h2>
+    {% if user_requests %}
+        <div class="table-wrapper">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Topic Title</th>
+                        <th style="width: 40%;">Description</th>
+                        <th style="width: 15%; text-align: center;">Status</th>
+                        <th style="width: 10%; text-align: center;">Votes</th>
+                        <th style="width: 10%; text-align: center;">Submitted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in user_requests %}
+                        <tr>
+                            <td style="font-weight: 600; color: var(--text-main);">{{ req.title }}</td>
+                            <td>
+                                {{ req.description }}
+                                {% if req.status == 'rejected' and req.admin_note %}
+                                    <div style="margin-top: 8px; font-size: 0.85rem; color: #f87171; background: rgba(239, 68, 68, 0.08); padding: 6px 12px; border-radius: 8px; border-left: 3px solid var(--danger);">
+                                        <strong>Admin reason:</strong> <em>{{ req.admin_note }}</em>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if req.status == 'approved' %}
+                                    <span class="user-tag" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); color: #34d399;">Approved</span>
+                                {% elif req.status == 'rejected' %}
+                                    <span class="user-tag" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #f87171;">Rejected</span>
+                                {% else %}
+                                    <span class="user-tag" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); color: var(--warning);">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center; font-weight: 700; color: var(--accent);">{{ req.votes }}</td>
+                            <td style="text-align: center; font-size: 0.85rem; color: var(--text-muted);">{{ req.created_at.split(' ')[0] if req.created_at else 'Today' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p style="color: var(--text-muted); margin-top: 1rem;">You have not submitted any topic suggestions yet. Click "Suggest a Topic" above to get started!</p>
+    {% endif %}
+</div>
+
+<div class="glass-card">
+    <h2 style="border-bottom: 1px solid var(--glass-border); padding-bottom: 0.8rem; margin-bottom: 1.5rem; color: var(--secondary);">
+        Community Pending Suggestions
+    </h2>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem;">
+        See what others are suggesting. Upvote the topics you'd love to see as new quiz modules in the app!
+    </p>
+    
+    {% if pending_requests %}
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+            {% for req in pending_requests %}
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 16px; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap; transition: all 0.3s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+                    <div style="flex: 1; min-width: 250px;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                            <h3 style="margin-bottom: 0; color: var(--text-main); font-size: 1.25rem;">{{ req.title }}</h3>
+                            <span style="font-size: 0.8rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 20px;">
+                                By: @{{ req.username }}
+                            </span>
+                        </div>
+                        <p style="margin-bottom: 0; font-size: 0.95rem; color: var(--text-muted); line-height: 1.4;">{{ req.description }}</p>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 1.5rem;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent); line-height: 1;">{{ req.votes }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Votes</div>
+                        </div>
+                        
+                        <form action="{{ url_for('vote_topic_request', request_id=req.id) }}" method="POST" style="margin: 0;">
+                            {% if req.has_voted %}
+                                <button type="button" class="btn btn-secondary btn-sm" style="background: rgba(6, 182, 212, 0.1); border-color: var(--accent); color: var(--accent); cursor: not-allowed;" disabled>
+                                    ▲ Voted
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-primary btn-sm" style="box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);">
+                                    ▲ Upvote
+                                </button>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: var(--text-muted); margin-top: 1rem;">No other pending suggestions from the community at the moment.</p>
+    {% endif %}
+</div>
+{% endblock %}

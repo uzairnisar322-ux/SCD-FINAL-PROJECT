@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-card" style="margin-bottom: 2rem;">
+    <h1>Welcome, {{ session.get('username') }}!</h1>
+    <p>Select a learning category from the options below to start a quiz, test your software engineering skills, or climb the leaderboard rank.</p>
+    
+    <h2 style="border-bottom: 1px solid var(--glass-border); padding-bottom: 0.8rem; margin-top: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <span>Quiz Categories</span>
+        <a href="{{ url_for('my_requests') }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+            💡 Request a Topic
+        </a>
+    </h2>
+    
+    {% if categories %}
+        <div class="categories-grid">
+            {% for category in categories %}
+                <div class="category-card" onclick="window.location.href='{{ url_for('quiz_view', category_id=category.id) }}'">
+                    <div>
+                        <div class="category-icon">
+                            {% if category.name == 'Software Engineering' %}
+                                ⚙️
+                            {% elif category.name == 'Web Development' %}
+                                🌐
+                            {% else %}
+                                💡
+                            {% endif %}
+                        </div>
+                        <h3 class="category-title">{{ category.name }}</h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 1.5rem;">
+                            Test questions on basic principles, core concepts, and structures.
+                        </p>
+                    </div>
+                    <a href="{{ url_for('quiz_view', category_id=category.id) }}" class="btn btn-primary btn-sm" style="align-self: flex-start;">
+                        Start Quiz &rarr;
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No categories found in the system database. Please notify your administrator.</p>
+    {% endif %}
+</div>
+
+<div class="glass-card">
+    <h2 style="border-bottom: 1px solid var(--glass-border); padding-bottom: 0.8rem;">
+        Your Performance History
+    </h2>
+    {% if user_scores %}
+        <div class="table-wrapper">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Score</th>
+                        <th>Percentage</th>
+                        <th>Completed Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in user_scores %}
+                        {% set pct = (item.score / item.max_score * 100)|int %}
+                        <tr>
+                            <td style="font-weight: 500;">{{ item.category_name }}</td>
+                            <td>
+                                <span style="font-weight: 600; color: var(--accent);">{{ item.score }}</span>
+                                <span style="color: var(--text-muted); font-size: 0.85rem;">/ {{ item.max_score }}</span>
+                            </td>
+                            <td>
+                                <span style="color: {% if pct >= 80 %}var(--success){% elif pct >= 50 %}var(--warning){% else %}var(--danger){% endif %}; font-weight: 600;">
+                                    {{ pct }}%
+                                </span>
+                            </td>
+                            <td style="font-size: 0.9rem; color: var(--text-muted);">{{ item.timestamp }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p style="margin-top: 1rem;">No quizzes attempted yet. Select a category above to start your first evaluation.</p>
+    {% endif %}
+</div>
+{% endblock %}
