@@ -1,0 +1,378 @@
+@startuml ERD Diagram
+' =====================================================================
+' 1. ENTITY RELATIONSHIP DIAGRAM (ERD) - Orthogonal & Sharp Edges
+' =====================================================================
+!theme carbon-gray
+skinparam shadowing false
+skinparam linetype ortho
+
+title QuizCraft - Database Entity Relationship Diagram (ERD)
+
+entity "users" as users {
+  * id : INTEGER <<PK>> (AUTOINCREMENT)
+  --
+  * username : TEXT <<UNIQUE>> (NOT NULL)
+  * password_hash : TEXT (NOT NULL)
+  * role : TEXT <<DEFAULT 'user'>> (NOT NULL)
+}
+
+entity "categories" as categories {
+  * id : INTEGER <<PK>> (AUTOINCREMENT)
+  --
+  * name : TEXT <<UNIQUE>> (NOT NULL)
+}
+
+entity "questions" as questions {
+  * id : INTEGER <<PK>> (AUTOINCREMENT)
+  --
+  * category_id : INTEGER <<FK>> (REFERENCES categories(id) ON DELETE CASCADE)
+  * question_text : TEXT (NOT NULL)
+  * option_a : TEXT (NOT NULL)
+  * option_b : TEXT (NOT NULL)
+  * option_c : TEXT (NOT NULL)
+  * option_d : TEXT (NOT NULL)
+  * correct_option : TEXT (NOT NULL)
+}
+
+entity "scores" as scores {
+  * id : INTEGER <<PK>> (AUTOINCREMENT)
+  --
+  * user_id : INTEGER <<FK>> (REFERENCES users(id) ON DELETE CASCADE)
+  * category_id : INTEGER <<FK>> (REFERENCES categories(id) ON DELETE CASCADE)
+  * score : INTEGER (NOT NULL)
+  * max_score : INTEGER (NOT NULL)
+  * timestamp : DATETIME <<DEFAULT CURRENT_TIMESTAMP>> (NOT NULL)
+}
+
+entity "topic_requests" as topic_requests {
+  * id : INTEGER <<PK>> (AUTOINCREMENT)
+  --
+  * user_id : INTEGER <<FK>> (REFERENCES users(id) ON DELETE CASCADE)
+  * title : TEXT (NOT NULL)
+  * description : TEXT (NOT NULL)
+  * status : TEXT <<DEFAULT 'pending'>> (NOT NULL)
+  * votes : INTEGER <<DEFAULT 1>> (NOT NULL)
+  admin_note : TEXT
+  * created_at : DATETIME <<DEFAULT CURRENT_TIMESTAMP>> (NOT NULL)
+}
+
+entity "topic_votes" as topic_votes {
+  * id : INTEGER <<PK>> (AUTOINCREMENT)
+  --
+  * user_id : INTEGER <<FK>> (REFERENCES users(id) ON DELETE CASCADE)
+  * topic_request_id : INTEGER <<FK>> (REFERENCES topic_requests(id) ON DELETE CASCADE)
+}
+
+' Crow's foot notation relationships mapped orthogonally with straight paths
+users ||--o{ scores : "saves"
+users ||--o{ topic_requests : "submits"
+users ||--o{ topic_votes : "casts"
+categories ||--o{ questions : "contains"
+categories ||--o{ scores : "evaluates"
+topic_requests ||--o{ topic_votes : "receives"
+@enduml
+
+
+@startuml Class Diagram
+' =====================================================================
+' 2. CLASS DIAGRAM (Orthogonal, Straight & Sharp Edges with Dotted Dependencies)
+' =====================================================================
+!theme carbon-gray
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+skinparam PackageStyle rectangle
+
+title QuizCraft - Logical Class Diagram (Orthogonal Layout with Sharp & Dotted Arrows)
+
+class DatabaseManager {
+  + init_db() : void
+  + get_db_connection() : Connection
+  + register_user(username, password) : int
+  + authenticate_user(username, password) : User
+  + get_categories() : List<Category>
+  + add_category(name) : int
+  + delete_category(id) : boolean
+  + get_questions_by_category(category_id) : List<Question>
+  + add_question(cat_id, text, a, b, c, d, correct) : int
+  + update_question(id, cat_id, text, a, b, c, d, correct) : boolean
+  + delete_question(id) : boolean
+  + save_score(user_id, category_id, score, max_score) : int
+  + get_leaderboard() : List<ScoreRecord>
+  + create_topic_request(user_id, title, description) : int
+  + get_my_topic_requests(user_id) : List<TopicRequest>
+  + get_all_pending_topic_requests(user_id) : List<TopicRequest>
+  + upvote_topic_request(user_id, request_id) : boolean
+  + approve_topic_request(request_id) : boolean
+  + reject_topic_request(request_id, note) : boolean
+}
+
+class QuizEngine {
+  + DEFAULT_BASE_SCORE : int = 10
+  + DEFAULT_SPEED_BONUS_MAX : int = 10
+  + TIME_LIMIT_PER_QUESTION : float = 15.0
+  + validate_answer(submitted, correct) : boolean
+  + calculate_score(is_correct, time_taken, max_time) : int
+  + is_timer_expired(time_taken, max_time) : boolean
+}
+
+class User {
+  - id : int
+  - username : string
+  - password_hash : string
+  - role : string
+  + getId() : int
+  + getUsername() : string
+  + getRole() : string
+}
+
+class Category {
+  - id : int
+  - name : string
+  + getId() : int
+  + getName() : string
+}
+
+class Question {
+  - id : int
+  - category_id : int
+  - question_text : string
+  - option_a : string
+  - option_b : string
+  - option_c : string
+  - option_d : string
+  - correct_option : string
+  + validate() : boolean
+}
+
+class ScoreRecord {
+  - id : int
+  - user_id : int
+  - category_id : int
+  - score : int
+  - max_score : int
+  - timestamp : datetime
+}
+
+class TopicRequest {
+  - id : int
+  - user_id : int
+  - title : string
+  - description : string
+  - status : string
+  - votes : int
+  - admin_note : string
+  - created_at : datetime
+}
+
+' Solid arrows for structural association, dotted arrows (..>) for operational dependency
+DatabaseManager ..> User : "instantiates (dotted dependency)"
+DatabaseManager ..> Category : "queries (dotted dependency)"
+DatabaseManager ..> Question : "queries (dotted dependency)"
+DatabaseManager ..> ScoreRecord : "writes (dotted dependency)"
+DatabaseManager ..> TopicRequest : "reads/updates (dotted dependency)"
+QuizEngine ..> Question : "evaluates (dotted dependency)"
+@enduml
+
+
+@startuml Activity Diagram
+' =====================================================================
+' 3. ACTIVITY DIAGRAM (Straight Lines & Sharp Edges)
+' =====================================================================
+!theme carbon-gray
+skinparam shadowing false
+skinparam linetype ortho
+
+title QuizCraft - Quiz Playback Activity Diagram (Straight & Sharp Orthogonal Flow)
+
+start
+:Select target quiz category;
+:Request questions from server;
+if (Are questions available?) then (yes)
+  :Load questions into client memory;
+  :Initialize cumulative_score = 0;
+  :Set current_question_index = 0;
+  
+  repeat
+    :Display question text & options (A, B, C, D);
+    :Start UI countdown timer (15 seconds);
+    :Start server-side question timestamp;
+    
+    if (User selects an option before timeout?) then (yes)
+      :Freeze countdown clock;
+      :Calculate time_taken;
+      :Submit answer and time_taken to server;
+      
+      if (Is answer correct & time_taken <= 15s?) then (yes)
+        :Calculate speed bonus;
+        :Award base score (10 pts) + speed bonus (0-10 pts);
+        :Add to cumulative_score;
+      else (no)
+        :Award 0 points;
+      endif
+    else (no)
+      :Handle timeout;
+      :Award 0 points;
+    endif
+    
+    :Display feedback (show correct choice);
+    :Increment current_question_index;
+    
+  repeat while (Are there more questions?) is (yes)
+  ->no;
+  
+  :Post final cumulative_score to server;
+  :Save score record to database;
+  :Display results summary modal with metrics;
+  :Update personal score log on dashboard;
+else (no)
+  :Display category empty notification;
+endif
+stop
+@enduml
+
+
+@startuml Sequence Diagram
+' =====================================================================
+' 4. SEQUENCE DIAGRAM (Solid Straight Message Arrows & Dotted Return Arrows)
+' =====================================================================
+!theme carbon-gray
+autonumber
+skinparam shadowing false
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+title QuizCraft - Interactive Operations (Solid Messages & Dotted Returns)
+
+actor User
+participant "quiz.js\n(Client Script)" as JS
+participant "app.py\n(Server Route)" as App
+participant "database.py\n(Query Handler)" as DB
+database "quiz.db\n(SQLite Engine)" as SQL
+
+== Quiz Playing Interaction ==
+User -> JS : Click "Start Quiz" button
+JS -> App : POST /api/quiz/start {category_id}
+App -> DB : get_questions_by_category(category_id)
+DB -> SQL : SELECT * FROM questions WHERE category_id = ?
+SQL --> DB : Return questions array (dotted return)
+DB --> App : Question dictionaries (dotted return)
+App -> App : Store answers securely in server session
+App --> JS : return JSON (questions without correct answers) (dotted return)
+JS -> User : Start timer and show first question
+
+group Question Answering [Repeated for each question]
+    User -> JS : Click option choice
+    JS -> JS : Freeze UI clock & calculate time_taken
+    JS -> App : POST /api/quiz/submit {question_id, choice}
+    App -> App : validate_answer() & calculate_score(time_taken)
+    App --> JS : return JSON (is_correct, points, next_question) (dotted return)
+    JS -> User : Display response feedback and load next question
+end
+
+JS -> App : POST /api/quiz/submit (Final question submitted)
+App -> DB : save_score(user_id, category_id, total, max_score)
+DB -> SQL : INSERT INTO scores (score, max_score)
+SQL --> DB : Return success (dotted return)
+App -> App : Clear active quiz session cache
+App --> JS : return JSON (completed: true, final_score, max_score) (dotted return)
+JS -> User : Render dynamic performance results card
+
+== Secure Persistent Upvoting ==
+User -> App : Click upvote button on topic request card
+App -> DB : upvote_topic_request(user_id, request_id)
+DB -> SQL : SELECT 1 FROM topic_votes WHERE user_id = ? AND topic_request_id = ?
+alt User has not voted before on this request
+    DB -> SQL : INSERT INTO topic_votes (user_id, topic_request_id)
+    DB -> SQL : UPDATE topic_requests SET votes = votes + 1 WHERE id = ?
+    DB --> App : Return True (Success) (dotted return)
+    App --> User : Flash "Vote registered successfully!" (dotted return)
+else User has already upvoted (Vulnerability prevented)
+    DB --> App : Return False (Conflict) (dotted return)
+    App --> User : Flash "You have already upvoted this topic!" (dotted return)
+end
+@enduml
+
+
+@startuml UseCase Diagram
+' =====================================================================
+' 5. USE CASE DIAGRAM (Straight Lines & Sharp Edges)
+' =====================================================================
+!theme carbon-gray
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+
+title QuizCraft - Functional Use Cases (Orthogonal Layout with Straight & Sharp Lines)
+
+actor "Student User" as student
+actor "Administrator" as admin
+
+rectangle "System Boundaries" {
+  usecase "Register & Login" as UC1
+  usecase "Play Time-Limit Quizzes" as UC2
+  usecase "View Personal Performance Log" as UC3
+  usecase "View Live Leaderboard" as UC4
+  usecase "Propose Topic Suggestions" as UC5
+  usecase "Upvote Community Topics" as UC6
+  
+  usecase "Review Pending Topic Submissions" as UC7
+  usecase "Approve Request (Auto-spawn Category)" as UC8
+  usecase "Reject Request (Save Explanation Note)" as UC9
+  usecase "Categories & Questions Editor (CRUD)" as UC10
+}
+
+' Solid straight lines linking Actors to Usecases
+student --> UC1
+student --> UC2
+student --> UC3
+student --> UC4
+student --> UC5
+student --> UC6
+
+admin --> UC1
+admin --> UC7
+admin --> UC8
+admin --> UC9
+admin --> UC10
+@enduml
+
+
+@startuml Component Diagram
+' =====================================================================
+' 6. COMPONENT DIAGRAM (Straight Lines, Sharp Edges & Dotted Dependencies)
+' =====================================================================
+!theme carbon-gray
+skinparam shadowing false
+skinparam linetype ortho
+
+title QuizCraft - High-Level Component Diagram (Orthogonal Layout with Sharp & Dotted Arrows)
+
+package "User Interface (Presentation Layer)" {
+  [Glassmorphic HTML/CSS Templates] as view
+  [Asynchronous Client Logic (quiz.js)] as script
+}
+
+package "Flask Core Application (Controller Layer)" {
+  [App Routing Controller (app.py)] as app
+  [Access Guards (decorators)] as guards
+  [Scoring Engine (quiz_engine.py)] as engine
+}
+
+package "Database Handler (Data Access Layer)" {
+  [SQLite Connection & Query Helper (database.py)] as database
+}
+
+database "Data Storage" {
+  [SQLite Database File (quiz.db)] as sqlite
+}
+
+' Solid straight lines (-->) for links, dotted arrows (..>) for component dependencies
+view --> app : "HTTP requests"
+script --> app : "Asynchronous API JSON requests"
+app ..> guards : "references (dotted dependency)"
+app ..> engine : "references (dotted dependency)"
+app ..> database : "references (dotted dependency)"
+database ..> sqlite : "queries (dotted dependency)"
+app ..> view : "renders (dotted dependency)"
+@enduml
